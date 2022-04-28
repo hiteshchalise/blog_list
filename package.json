@@ -1,0 +1,30 @@
+{
+    "name": "blog_list",
+    "version": "1.0.0",
+    "description": "Blog list application exercises, part 4 of full stack open.",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "nodemon index.js",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "lint": "eslint ."
+    },
+    "keywords": [
+        "bloglist",
+        "fullstackopen",
+        "part4"
+    ],
+    "author": "Hitesh Chalise",
+    "license": "ISC",
+    "dependencies": {
+        "cors": "^2.8.5",
+        "dotenv": "^16.0.0",
+        "express": "^4.17.3",
+        "mongoose": "^6.3.1",
+        "morgan": "^1.10.0"
+    },
+    "devDependencies": {
+        "eslint": "^8.14.0",
+        "nodemon": "^2.0.15"
+    }
+}
