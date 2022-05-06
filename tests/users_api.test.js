@@ -7,9 +7,6 @@ const helper = require('../utils/helper.js')
 
 const api = supertest(app)
 
-beforeEach(async () => {
-    await User.deleteMany({})
-})
 
 describe('when there is single user', () => {
 

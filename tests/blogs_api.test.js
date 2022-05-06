@@ -1,6 +1,8 @@
 const mongoose = require('mongoose')
 const supertest = require('supertest')
+const bcrypt = require('bcryptjs')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const app = require('../app')
 
 const api = supertest(app)
@@ -21,6 +23,16 @@ const initialBlog = [
 ]
 
 beforeEach(async () => {
+    await User.deleteMany({})
+    const passwordHash = await bcrypt.hash('superSecretPassword', 10)
+    const user = new User({
+        username: 'username123',
+        name: 'Foo Bar',
+        passwordHash
+    })
+
+    await user.save()
+
     await Blog.deleteMany({})
     const blogObjects = initialBlog.map(blog => {
         const blogObject = new Blog(blog)
@@ -29,71 +41,107 @@ beforeEach(async () => {
     await Promise.all(blogObjects)
 })
 
-test('blogs are returned as json', async () => {
-    await api
-        .get('/api/blogs')
-        .expect(200)
-        .expect('Content-Type', /application\/json/)
-}, 100000)
+describe('GET  requests for blog api', () => {
 
-test('there are two blogs', async () => {
-    const response = await api.get('/api/blogs')
-    expect(response.body).toHaveLength(2)
+    test('blogs are returned as json', async () => {
+        await api
+            .get('/api/blogs')
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+    }, 100000)
+
+    test('there are two blogs', async () => {
+        const response = await api.get('/api/blogs')
+        expect(response.body).toHaveLength(2)
+    })
+
+    test('unique identifier is named id', async () => {
+        const response = await api.get('/api/blogs')
+        expect(response.body[0].id).toBeDefined()
+    })
+
 })
 
-test('unique identifier is named id', async () => {
-    const response = await api.get('/api/blogs')
-    expect(response.body[0].id).toBeDefined()
-})
+describe('POST requests for blog api', () => {
 
-test('post request creates new blog post', async () => {
-    const newBlog = {
+    const validBlog = {
         title: 'A new post',
         author: 'Gus Fring',
         url: 'https://www.reddit.com/',
         likes: 13
     }
 
-    await api
-        .post('/api/blogs')
-        .send(newBlog)
-        .expect(201)
-        .expect('Content-Type', /application\/json/)
-
-    const response = await api.get('/api/blogs')
-    const title = response.body.map(r => r.title)
-
-    expect(response.body).toHaveLength(initialBlog.length + 1)
-    expect(title).toContain('A new post')
-})
-
-test('missing likes field defaults to zero', async () => {
-    const newBlog = {
+    const blogWithMissingLikes = {
         title: 'new',
         author: 'new',
         url: 'http://lol.com'
     }
-    const postResponse = await api
-        .post('/api/blogs')
-        .send(newBlog)
-        .expect(201)
-        .expect('Content-Type', /application\/json/)
 
-    const response = await api.get('/api/blogs')
-    expect(response.body).toHaveLength(initialBlog.length + 1)
-    expect(postResponse.body.likes).toBeDefined()
-    expect(postResponse.body.likes).toBe(0)
-})
-
-test('missing title and url field responds with 400', async () => {
-    const newBlog = {
+    const blogWithMissingTitleAndUrl = {
         author: 'new',
         likes: 4
     }
-    await api
-        .post('/api/blogs')
-        .send(newBlog)
-        .expect(400)
+
+    test('post request creates new blog post', async () => {
+
+        await api
+            .post('/api/blogs')
+            .send(validBlog)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
+        const response = await api.get('/api/blogs')
+        const title = response.body.map(r => r.title)
+
+        expect(response.body).toHaveLength(initialBlog.length + 1)
+        expect(title).toContain('A new post')
+    })
+
+    test('missing likes field defaults to zero', async () => {
+
+        const postResponse = await api
+            .post('/api/blogs')
+            .send(blogWithMissingLikes)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
+        const response = await api.get('/api/blogs')
+        expect(response.body).toHaveLength(initialBlog.length + 1)
+        expect(postResponse.body.likes).toBeDefined()
+        expect(postResponse.body.likes).toBe(0)
+    })
+
+    test('missing title and url field responds with 400', async () => {
+        await api
+            .post('/api/blogs')
+            .send(blogWithMissingTitleAndUrl)
+            .expect(400)
+    })
+
+    test('creating a valid blog post will attatch user id', async () => {
+        const response = await api
+            .post('/api/blogs')
+            .send(validBlog)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
+        expect(response.body.user).toBeDefined()
+
+        const userById = await User.findById(response.body.user)
+        expect(userById._id.toString()).toEqual(response.body.user)
+    })
+
+    test('creating a valid blog post will attatch blog id to user\'s blog field', async () => {
+        const response = await api
+            .post('/api/blogs')
+            .send(validBlog)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
+        const userById = await User.findById(response.body.user)
+
+        expect(userById.blogs.includes(response.body.id)).toBe(true)
+    })
 })
 
 describe('deleting blog post', () => {
