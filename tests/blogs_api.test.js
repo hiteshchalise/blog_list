@@ -31,17 +31,18 @@ beforeEach(async () => {
         passwordHash
     })
 
-    await user.save()
+    const savedUser = await user.save()
 
     await Blog.deleteMany({})
     const blogObjects = initialBlog.map(blog => {
+        blog.user = savedUser._id
         const blogObject = new Blog(blog)
         return blogObject.save()
     })
     await Promise.all(blogObjects)
 })
 
-describe('GET  requests for blog api', () => {
+describe('GET requests for blog api', () => {
 
     test('blogs are returned as json', async () => {
         await api
@@ -58,6 +59,13 @@ describe('GET  requests for blog api', () => {
     test('unique identifier is named id', async () => {
         const response = await api.get('/api/blogs')
         expect(response.body[0].id).toBeDefined()
+    })
+
+    test('user information is populated', async () => {
+        const response = await api.get('/api/blogs')
+        expect(response.body[0].user.username).toBeDefined()
+        expect(response.body[0].user.name).toBeDefined()
+        expect(response.body[0].user.id).toBeDefined()
     })
 
 })

@@ -2,13 +2,14 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const User = require('../models/user')
 const bcrypt = require('bcryptjs')
+const lodashObject = require('lodash/object')
 const app = require('../app')
 const helper = require('../utils/helper.js')
 
 const api = supertest(app)
 
 
-describe('when there is single user', () => {
+describe('when there is a single user', () => {
 
     beforeEach(async () => {
         await User.deleteMany({})
@@ -33,6 +34,21 @@ describe('when there is single user', () => {
         expect(response.body[0]._id).not.toBeDefined()
         expect(response.body[0].__v).not.toBeDefined()
         expect(response.body[0].id).toBeDefined()
+    })
+
+    test('GET users will return populated blog posts of user', async () => {
+        const blogResponse = await api.post('/api/blogs').send({
+            title: 'A new post',
+            author: 'Gus Fring',
+            url: 'https://www.reddit.com/',
+            likes: 13
+        })
+        const response = await api.get('/api/users')
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+        expect(response.body[0].blogs).toBeDefined()
+        expect(response.body[0].blogs.length).toBe(1)
+        expect(response.body[0].blogs[0]).toEqual(lodashObject.pick(blogResponse.body, ['author', 'title', 'url', 'id']))
     })
 
     test('user creation successful with fresh username', async () => {
