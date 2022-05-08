@@ -19,11 +19,25 @@ const errorHandler = (error, req, res, next) => {
         return res.status(400).json({ error: 'Malformed Id' })
     } else if (error.name === 'ValidationError') {
         return res.status(400).json({ error: error.message })
+    } else if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({ error: 'Invalid token' })
+    } else if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token expired' })
     }
 
     next(error)
 }
 
+const tokenExtractor = (req, res, next) => {
+    const authorization = req.get('authorization')
+    if (authorization && authorization.toLowerCase().startsWith('bearer')) {
+        req.token = authorization.substring(7)
+    } else {
+        req.token = null
+    }
+    next()
+}
+
 module.exports = {
-    requestLogger, unknownEndPoint, errorHandler
+    requestLogger, unknownEndPoint, errorHandler, tokenExtractor
 }

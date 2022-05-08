@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const supertest = require('supertest')
+const Blog = require('../models/blog')
 const User = require('../models/user')
 const bcrypt = require('bcryptjs')
 const lodashObject = require('lodash/object')
@@ -11,6 +12,8 @@ const api = supertest(app)
 
 describe('when there is a single user', () => {
 
+    let initialUser = {}
+
     beforeEach(async () => {
         await User.deleteMany({})
 
@@ -21,7 +24,7 @@ describe('when there is a single user', () => {
             passwordHash
         })
 
-        await user.save()
+        initialUser = await user.save()
     })
 
     test('GET users will return single user', async () => {
@@ -37,18 +40,24 @@ describe('when there is a single user', () => {
     })
 
     test('GET users will return populated blog posts of user', async () => {
-        const blogResponse = await api.post('/api/blogs').send({
+        const blog = new Blog({
             title: 'A new post',
             author: 'Gus Fring',
             url: 'https://www.reddit.com/',
+            user: initialUser._id,
             likes: 13
         })
+
+        const blogResponse = await blog.save()
+        initialUser.blogs = initialUser.blogs.concat(blogResponse._id)
+        await initialUser.save()
+
         const response = await api.get('/api/users')
             .expect(200)
             .expect('Content-Type', /application\/json/)
         expect(response.body[0].blogs).toBeDefined()
         expect(response.body[0].blogs.length).toBe(1)
-        expect(response.body[0].blogs[0]).toEqual(lodashObject.pick(blogResponse.body, ['author', 'title', 'url', 'id']))
+        expect(response.body[0].blogs[0]).toEqual(lodashObject.pick(blogResponse, ['author', 'title', 'url', 'id']))
     })
 
     test('user creation successful with fresh username', async () => {

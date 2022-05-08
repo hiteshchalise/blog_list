@@ -90,10 +90,21 @@ describe('POST requests for blog api', () => {
         likes: 4
     }
 
-    test('post request creates new blog post', async () => {
+    let token = ''
 
+    beforeEach(async () => {
+        const response = await api.post('/api/login')
+            .send({
+                username: 'username123',
+                password: 'superSecretPassword'
+            })
+        token = response.body.token
+    })
+
+    test('post request creates new blog post', async () => {
         await api
             .post('/api/blogs')
+            .set('Authorization', 'bearer ' + token)
             .send(validBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -109,6 +120,7 @@ describe('POST requests for blog api', () => {
 
         const postResponse = await api
             .post('/api/blogs')
+            .set('Authorization', 'bearer ' + token)
             .send(blogWithMissingLikes)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -122,6 +134,7 @@ describe('POST requests for blog api', () => {
     test('missing title and url field responds with 400', async () => {
         await api
             .post('/api/blogs')
+            .set('Authorization', 'bearer ' + token)
             .send(blogWithMissingTitleAndUrl)
             .expect(400)
     })
@@ -129,6 +142,7 @@ describe('POST requests for blog api', () => {
     test('creating a valid blog post will attatch user id', async () => {
         const response = await api
             .post('/api/blogs')
+            .set('Authorization', 'bearer ' + token)
             .send(validBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -142,6 +156,7 @@ describe('POST requests for blog api', () => {
     test('creating a valid blog post will attatch blog id to user\'s blog field', async () => {
         const response = await api
             .post('/api/blogs')
+            .set('Authorization', 'bearer ' + token)
             .send(validBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
