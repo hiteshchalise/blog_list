@@ -168,10 +168,23 @@ describe('POST requests for blog api', () => {
 })
 
 describe('deleting blog post', () => {
+
+    let token = ''
+
+    beforeEach(async () => {
+        const response = await api.post('/api/login')
+            .send({
+                username: 'username123',
+                password: 'superSecretPassword'
+            })
+        token = response.body.token
+    })
+
     test('when id is valid, status is 204', async () => {
         const blog = await Blog.findOne({})
         const response = await api
             .delete('/api/blogs/' + blog._id)
+            .set('Authorization', 'bearer ' + token)
         expect(response.status).toBe(204)
 
         const newList = await Blog.find({})
@@ -181,12 +194,20 @@ describe('deleting blog post', () => {
     test('when id cannot be found, status is 404', async () => {
         await api
             .delete('/api/blogs/6269ff69774048bfe9d45bff')
+            .set('Authorization', 'bearer ' + token)
             .expect(404)
     })
     test('when id is malformed, status is 400', async () => {
         await api
             .delete('/api/blogs/6')
+            .set('Authorization', 'bearer ' + token)
             .expect(400)
+    })
+    test('when authorization header is not set, it will return unauthorized status code', async () => {
+        const blog = await Blog.findOne({})
+        await api
+            .delete('/api/blogs/' + blog._id)
+            .expect(401)
     })
 })
 
