@@ -165,6 +165,13 @@ describe('POST requests for blog api', () => {
 
         expect(userById.blogs.includes(response.body.id)).toBe(true)
     })
+
+    test('creating blog without authorization header with token will return status 401', async () => {
+        await api
+            .post('/api/blogs')
+            .send(validBlog)
+            .expect(401)
+    })
 })
 
 describe('deleting blog post', () => {
