@@ -14,12 +14,12 @@ const middleware = require('./utils/middleware')
 logger.info('Connecting to MongoDB')
 
 mongoose.connect(config.MONGODB_URI)
-    .then(() => {
-        logger.info('Successfully connected to MongoDB')
-    })
-    .catch((error) => {
-        logger.error(`Error connecting to MongoDb ${error.message}`)
-    })
+  .then(() => {
+    logger.info('Successfully connected to MongoDB')
+  })
+  .catch((error) => {
+    logger.error(`Error connecting to MongoDb ${error.message}`)
+  })
 
 
 app.use(cors())
